@@ -3,12 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>صيدلية محمد النجار | تسجيل الدخول</title>
-
+  <title>صيدلية محمد النجار</title>
   <style>
-    * {
-      box-sizing: border-box;
-    }
+    * { box-sizing: border-box; }
 
     body {
       margin: 0;
@@ -28,15 +25,7 @@
       box-shadow: 0 8px 30px #00000012;
     }
 
-    h2 {
-      text-align: center;
-      margin-top: 0;
-    }
-
-    p {
-      text-align: center;
-      color: #667;
-    }
+    h2, p { text-align: center; }
 
     input, button {
       width: 100%;
@@ -46,9 +35,7 @@
       font-size: 16px;
     }
 
-    input {
-      border: 1px solid #ccd8d4;
-    }
+    input { border: 1px solid #ccd8d4; }
 
     button {
       border: 0;
@@ -58,74 +45,109 @@
       cursor: pointer;
     }
 
-    button:disabled {
-      opacity: 0.6;
+    button:disabled { opacity: .6; }
+
+    .secondary {
+      background: #e8f1ee;
+      color: #16745f;
     }
 
     #message {
-      color: #b42318;
       font-size: 14px;
       line-height: 1.6;
+      overflow-wrap: anywhere;
     }
+
+    .hidden { display: none; }
   </style>
 </head>
-
 <body>
 
-  <main class="login">
-    <h2>صيدلية محمد النجار</h2>
+<main class="login">
+  <h2>صيدلية محمد النجار</h2>
+
+  <section id="loginSection">
     <p>تسجيل دخول المدير</p>
 
     <form id="loginForm">
-      <input
-        id="email"
-        type="email"
-        placeholder="البريد الإلكتروني"
-        autocomplete="username"
-        required
-      >
+      <input id="email" type="email"
+        placeholder="البريد الإلكتروني" required>
 
-      <input
-        id="password"
-        type="password"
-        placeholder="كلمة المرور"
-        autocomplete="current-password"
-        required
-      >
+      <input id="password" type="password"
+        placeholder="كلمة المرور" required>
 
       <button id="loginButton" type="submit">
         تسجيل الدخول
       </button>
     </form>
 
-    <p id="message" role="status"></p>
-  </main>
+    <button id="forgotButton" class="secondary" type="button">
+      نسيت كلمة المرور؟
+    </button>
+  </section>
 
-  <script type="module">
-    import { createClient } from
-      "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
+  <section id="resetSection" class="hidden">
+    <p>تعيين كلمة مرور جديدة</p>
 
-    const SUPABASE_URL =
-      "https://pwjzoxzuwiwejpejpfuj.supabase.co";
+    <form id="resetForm">
+      <input id="newPassword" type="password"
+        placeholder="كلمة المرور الجديدة" minlength="8" required>
 
-    const SUPABASE_KEY =
-      "sb_publishable_Hx31i11p2CvyDhvdG3b6oQ_tAzOCjYn";
+      <input id="confirmPassword" type="password"
+        placeholder="تأكيد كلمة المرور" minlength="8" required>
 
-    const supabase = createClient(
-      SUPABASE_URL,
-      SUPABASE_KEY
-    );
+      <button id="savePassword" type="submit">
+        حفظ كلمة المرور
+      </button>
+    </form>
+  </section>
 
-    const form = document.getElementById("loginForm");
-    const message = document.getElementById("message");
-    const button = document.getElementById("loginButton");
+  <p id="message" role="status"></p>
+</main>
 
-    form.addEventListener("submit", async (e) => {
+<script type="module">
+  import { createClient } from
+    "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
+
+  const SUPABASE_URL =
+    "https://pwjzoxzuwiwejpejpfuj.supabase.co";
+
+  const SUPABASE_KEY =
+    "sb_publishable_Hx31i11p2CvyDhvdG3b6oQ_tAzOCjYn";
+
+  const supabase = createClient(
+    SUPABASE_URL,
+    SUPABASE_KEY
+  );
+
+  const message = document.getElementById("message");
+  const loginSection = document.getElementById("loginSection");
+  const resetSection = document.getElementById("resetSection");
+
+  function showMessage(text, success = false) {
+    message.style.color = success ? "green" : "#b42318";
+    message.textContent = text;
+  }
+
+  function showResetPage() {
+    loginSection.classList.add("hidden");
+    resetSection.classList.remove("hidden");
+  }
+
+  supabase.auth.onAuthStateChange((event) => {
+    if (event === "PASSWORD_RECOVERY") {
+      showResetPage();
+      showMessage("اكتب كلمة المرور الجديدة.");
+    }
+  });
+
+  document.getElementById("loginForm")
+    .addEventListener("submit", async (e) => {
       e.preventDefault();
 
-      message.style.color = "#b42318";
-      message.textContent = "جارٍ تسجيل الدخول...";
+      const button = document.getElementById("loginButton");
       button.disabled = true;
+      showMessage("جارٍ تسجيل الدخول...");
 
       try {
         const email =
@@ -141,14 +163,7 @@
           });
 
         if (error) {
-          message.textContent =
-            "تعذر تسجيل الدخول: " + error.message;
-          return;
-        }
-
-        if (!data.user) {
-          message.textContent =
-            "لم يتم العثور على بيانات المستخدم.";
+          showMessage("فشل تسجيل الدخول: " + error.message);
           return;
         }
 
@@ -161,34 +176,98 @@
 
         if (profileError || !profile) {
           await supabase.auth.signOut();
-          message.textContent =
-            "تعذر قراءة بيانات الحساب. راجع إعدادات الصلاحيات.";
+          showMessage("تعذر قراءة بيانات الحساب: " +
+            (profileError?.message || "الحساب غير موجود"));
           return;
         }
 
-        if (
-          profile.role !== "admin" ||
-          profile.is_active !== true
-        ) {
+        if (profile.role !== "admin" ||
+            profile.is_active !== true) {
           await supabase.auth.signOut();
-          message.textContent =
-            "هذا الحساب ليس مديرًا نشطًا.";
+          showMessage("هذا الحساب ليس مديرًا نشطًا.");
           return;
         }
 
-        message.style.color = "green";
-        message.textContent =
-          "تم تسجيل دخول المدير بنجاح.";
+        showMessage(
+          "تم تسجيل دخول المدير بنجاح: " + profile.full_name,
+          true
+        );
 
       } catch (error) {
-        message.textContent =
-          "حدث خطأ: " + error.message;
-
+        showMessage("حدث خطأ: " + error.message);
       } finally {
         button.disabled = false;
       }
     });
-  </script>
+
+  document.getElementById("forgotButton")
+    .addEventListener("click", async () => {
+      const email =
+        document.getElementById("email").value.trim();
+
+      if (!email) {
+        showMessage("اكتب بريدك الإلكتروني أولًا.");
+        return;
+      }
+
+      showMessage("جارٍ إرسال رابط الاستعادة...");
+
+      const { error } =
+        await supabase.auth.resetPasswordForEmail(email, {
+          redirectTo:
+            "https://pharmacy-delivery-system-two.vercel.app/"
+        });
+
+      if (error) {
+        showMessage("تعذر الإرسال: " + error.message);
+      } else {
+        showMessage("تم طلب إرسال رابط الاستعادة. راجع بريدك.", true);
+      }
+    });
+
+  document.getElementById("resetForm")
+    .addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const password =
+        document.getElementById("newPassword").value;
+
+      const confirm =
+        document.getElementById("confirmPassword").value;
+
+      if (password.length < 8) {
+        showMessage("كلمة المرور يجب أن تكون 8 أحرف على الأقل.");
+        return;
+      }
+
+      if (password !== confirm) {
+        showMessage("كلمتا المرور غير متطابقتين.");
+        return;
+      }
+
+      const button = document.getElementById("savePassword");
+      button.disabled = true;
+
+      const { error } = await supabase.auth.updateUser({
+        password
+      });
+
+      button.disabled = false;
+
+      if (error) {
+        showMessage("تعذر تغيير كلمة المرور: " + error.message);
+      } else {
+        showMessage(
+          "تم تغيير كلمة المرور بنجاح. ارجع لتسجيل الدخول.",
+          true
+        );
+
+        await supabase.auth.signOut();
+        resetSection.classList.add("hidden");
+        loginSection.classList.remove("hidden");
+      }
+    });
+</script>
 
 </body>
 </html>
