@@ -1,0 +1,91 @@
+
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>صيدلية محمد النجار | تسجيل الدخول</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; min-height: 100vh;
+      display: grid; place-items: center;
+      background: #f0f4f3;
+      font-family: Arial, sans-serif;
+      color: #183b35;
+    }
+    .login {
+      width: min(90%, 390px);
+      background: white; padding: 30px;
+      border-radius: 18px;
+      box-shadow: 0 8px 30px #00000012;
+    }
+    h2 { text-align: center; margin-top: 0; }
+    p { text-align: center; color: #667; }
+    input, button {
+      width: 100%; padding: 14px;
+      margin-top: 14px; border-radius: 9px;
+      font-size: 16px;
+    }
+    input { border: 1px solid #ccd8d4; }
+    button {
+      border: 0; background: #16745f;
+      color: white; font-weight: bold;
+    }
+    #message { color: #b42318; font-size: 14px; }
+  </style>
+</head>
+<body>
+  <main class="login">
+    <h2>صيدلية محمد النجار</h2>
+    <p>تسجيل دخول المدير</p>
+    <form id="loginForm">
+      <input id="email" type="email" placeholder="البريد الإلكتروني" required>
+      <input id="password" type="password" placeholder="كلمة المرور" required>
+      <button type="submit">تسجيل الدخول</button>
+    </form>
+    <p id="message"></p>
+  </main>
+
+  <script type="module">
+    import { createClient } from
+      "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
+
+    const SUPABASE_URL = "https://pwjzoxzuwiwejpejpfuj.supabase.co";
+    const SUPABASE_KEY ="sb_publishable_Hx31i11p2CvyDhvdG3b6oQ_tAzOCjYn;
+
+    const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    document.getElementById("loginForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const message = document.getElementById("message");
+      message.textContent = "جارٍ تسجيل الدخول...";
+
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: document.getElementById("email").value.trim(),
+        password: document.getElementById("password").value
+      });
+
+      if (error) {
+        message.textContent = "تعذر تسجيل الدخول: " + error.message;
+        return;
+      }
+
+      const { data: profile, error: profileError } = await supabase
+        .from("profiles")
+        .select("full_name, role, is_active")
+        .eq("id", data.user.id)
+        .single();
+
+      if (profileError || profile.role !== "admin" || !profile.is_active) {
+        await supabase.auth.signOut();
+        message.textContent = "هذا الحساب ليس مديرًا نشطًا.";
+        return;
+      }
+
+      message.style.color = "green";
+      message.textContent = "تم تسجيل دخول المدير بنجاح.";
+    });
+  </script>
+</body>
+</html>
